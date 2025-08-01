@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>AI Voice Chat</title>
+	<link rel="stylesheet" href="styles.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+	<div class="app-container">
+		<div class="app-header">
+			<h1><i class="fas fa-robot"></i> AI Voice Assistant</h1>
+			<p class="app-subtitle">Real-time voice conversations powered by AI</p>
+		</div>
+		
+		<div id="chat-interface">
+			<div class="input-container">
+				<label for="chat-input">Voice Agent ID</label>
+				<div class="input-wrapper">
+					<i class="fas fa-fingerprint input-icon"></i>
+					<input type="text" id="chat-input" placeholder="Enter Voice Agent UUID" />
+				</div>
+			</div>
+			
+			<div class="button-container">
+				<button id="start-btn" class="primary-btn">
+					<i class="fas fa-phone-alt"></i> Start Call
+				</button>
+				<button id="stop-btn" class="danger-btn" style="display:none;">
+					<i class="fas fa-phone-slash"></i> End Call
+				</button>
+				<button id="mute-btn" class="secondary-btn" style="display:inline-flex;">
+					<i class="fas fa-microphone-slash"></i> Mute
+				</button>
+				<button id="unmute-btn" class="secondary-btn" style="display:none;">
+					<i class="fas fa-microphone"></i> Unmute
+				</button>
+			</div>
+		</div>
+		
+		<div id="chat-container">
+			<div class="chat-header">
+				<div class="chat-title">
+					<i class="fas fa-comments"></i> Conversation
+				</div>
+				<div id="chat-status" class="chat-status">
+					<i class="fas fa-circle status-indicator"></i> Disconnected
+				</div>
+			</div>
+			
+			<div id="chat-box">
+				<!-- Messages will appear here -->
+				<div class="chat-welcome">
+					<div class="welcome-icon">
+						<i class="fas fa-comment-dots"></i>
+					</div>
+					<h3>Welcome to AI Voice Chat</h3>
+					<p>Enter a Voice Agent UUID and start a call to begin conversing with the AI</p>
+				</div>
+			</div>
+			
+			<div class="chat-footer">
+				<div id="function-call-log">
+					<!-- Function call notifications will appear here -->
+				</div>
+			</div>
+		</div>
+		
+		<div class="app-footer">
+			<p>© 2023 AI Voice Assistant | <a href="#" class="footer-link">Privacy Policy</a> | <a href="#" class="footer-link">Terms of Service</a></p>
+		</div>
+	</div>
+	
+	<div id="ai-transcript" style="display:none;"></div>
+	<div class="nav-links">
+		<a href="grok-chat.html" class="nav-link">Grok Chat</a>
+	</div>
+	<script src="script.js"></script>
+</body>
+</html>

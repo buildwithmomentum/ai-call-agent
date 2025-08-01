@@ -1,0 +1,17 @@
+name: Restrict PRs to Main
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  enforce-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if PR is from staging
+        run: |
+          if [[ "${{ github.base_ref }}" == "main" && "${{ github.head_ref }}" != "staging" ]]; then
+            echo "❌ Pull requests to main are only allowed from staging!"
+            exit 1
+          fi

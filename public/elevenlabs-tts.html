@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElevenLabs Text to Speech</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        select:focus, textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #audioPlayer {
+            width: 100%;
+            margin-top: 20px;
+            border-radius: 6px;
+        }
+        .error {
+            color: #dc3545;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .model-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        .voice-category {
+            font-weight: 600;
+            color: #666;
+            padding: 8px;
+            background-color: #f8f9fa;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+        
+        #voiceSelect optgroup {
+            font-weight: 600;
+            color: #444;
+        }
+        
+        .loading {
+            display: none;
+            margin-left: 10px;
+            color: #007bff;
+        }
+        .voice-id-container {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .voice-id-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .voice-id-display code {
+            background-color: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            flex-grow: 1;
+        }
+        .copy-button {
+            padding: 4px 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .copy-button:hover {
+            background-color: #0056b3;
+        }
+        .copy-button.copied {
+            background-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ElevenLabs Text to Speech</h1>
+        
+        <div class="form-group">
+            <label for="modelSelect">Select Model:</label>
+            <select id="modelSelect">
+                <option value="eleven_multilingual_v2">Eleven Multilingual v2 - Most Natural</option>
+                <option value="eleven_turbo_v2">Eleven Turbo v2 - Ultra-low latency</option>
+                <option value="eleven_english_v2">Eleven English v2 - Enhanced English</option>
+            </select>
+            <div class="model-info" id="modelInfo">Most natural-sounding output, supports 29 languages</div>
+        </div>
+
+        <div class="form-group">
+            <label for="voiceSelect">Select Voice:</label>
+            <select id="voiceSelect">
+                <!-- Voices will be loaded dynamically -->
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="outputFormat">Output Format:</label>
+            <select id="outputFormat">
+                <option value="mp3_44100_128">MP3 (44.1kHz, 128kbps) - High Quality</option>
+                <option value="mp3_44100_64">MP3 (44.1kHz, 64kbps) - Standard</option>
+                <option value="ulaw_8000">μ-law 8kHz - Telephony</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="textInput">Enter Text:</label>
+            <textarea id="textInput">Hi there! We've been expecting you—everything's ready. If you need anything at all, just let me know!</textarea>
+        </div>
+
+        <button onclick="generateSpeech()" id="generateButton">
+            Generate Speech
+            <span class="loading" id="loadingIndicator">Generating...</span>
+        </button>
+
+        <audio id="audioPlayer" controls style="display: none;"></audio>
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Update model info when model is changed
+        document.getElementById('modelSelect').addEventListener('change', function() {
+            const modelInfo = document.getElementById('modelInfo');
+            switch(this.value) {
+                case 'eleven_multilingual_v2':
+                    modelInfo.textContent = 'Most natural-sounding output, supports 29 languages';
+                    break;
+                case 'eleven_turbo_v2':
+                    modelInfo.textContent = 'Ultra-low latency (~75ms), supports 32 languages';
+                    break;
+                case 'eleven_english_v2':
+                    modelInfo.textContent = 'Optimized for English language content';
+                    break;
+            }
+        });
+
+        async function loadVoices() {
+            const voiceSelect = document.getElementById('voiceSelect');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            // Add a div to show the voice ID
+            if (!document.getElementById('voiceIdDisplay')) {
+                const voiceIdContainer = document.createElement('div');
+                voiceIdContainer.className = 'voice-id-container';
+                voiceIdContainer.innerHTML = `
+                    <div class="voice-id-display">
+                        <span>Voice ID: </span>
+                        <code id="voiceIdDisplay"></code>
+                        <button id="copyVoiceId" class="copy-button">Copy ID</button>
+                    </div>
+                `;
+                voiceSelect.parentNode.insertBefore(voiceIdContainer, voiceSelect.nextSibling);
+            }
+
+            // Add styles if not already present
+            if (!document.getElementById('voiceIdStyles')) {
+                const styles = document.createElement('style');
+                styles.id = 'voiceIdStyles';
+                styles.textContent = `
+                    .voice-id-container {
+                        margin-top: 10px;
+                        padding: 10px;
+                        background-color: #f8f9fa;
+                        border-radius: 4px;
+                        font-size: 14px;
+                    }
+                    .voice-id-display {
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                    }
+                    .voice-id-display code {
+                        background-color: #e9ecef;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-family: monospace;
+                        flex-grow: 1;
+                    }
+                    .copy-button {
+                        padding: 4px 12px;
+                        background-color: #007bff;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 12px;
+                    }
+                    .copy-button:hover {
+                        background-color: #0056b3;
+                    }
+                    .copy-button.copied {
+                        background-color: #28a745;
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+
+            try {
+                loadingIndicator.style.display = 'inline';
+                
+                const response = await fetch('/elevenlabs/voices', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch voices: ${response.status}`);
+                }
+
+                const { voices } = await response.json();
+                
+                // Clear existing options
+                voiceSelect.innerHTML = '';
+                
+                // Group voices by category
+                const voicesByCategory = {};
+                
+                voices.forEach(voice => {
+                    const category = voice.category || 'Other';
+                    if (!voicesByCategory[category]) {
+                        voicesByCategory[category] = [];
+                    }
+                    voicesByCategory[category].push(voice);
+                });
+
+                // Add voices by category
+                Object.entries(voicesByCategory).forEach(([category, categoryVoices]) => {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = category.charAt(0).toUpperCase() + category.slice(1);
+                    
+                    categoryVoices.forEach(voice => {
+                        const option = document.createElement('option');
+                        option.value = voice.voice_id;
+                        
+                        // Create description including voice ID
+                        let description = `${voice.name} - `;
+                        const labels = [];
+                        
+                        if (voice.labels) {
+                            if (voice.labels.accent) labels.push(voice.labels.accent);
+                            if (voice.labels.description) labels.push(voice.labels.description);
+                            if (voice.labels.age) labels.push(voice.labels.age.replace('_', ' '));
+                            if (voice.labels.use_case) labels.push(`for ${voice.labels.use_case}`);
+                        }
+                        
+                        description += labels.join(', ');
+                        option.textContent = description;
+                        
+                        if (voice.preview_url) {
+                            option.dataset.previewUrl = voice.preview_url;
+                        }
+                        
+                        optgroup.appendChild(option);
+                    });
+                    
+                    voiceSelect.appendChild(optgroup);
+                });
+
+                // Add change event listener to update voice ID display
+                voiceSelect.addEventListener('change', function() {
+                    const selectedVoiceId = this.value;
+                    const voiceIdDisplay = document.getElementById('voiceIdDisplay');
+                    voiceIdDisplay.textContent = selectedVoiceId;
+                });
+
+                // Initialize with first voice
+                if (voiceSelect.options.length > 0) {
+                    const voiceIdDisplay = document.getElementById('voiceIdDisplay');
+                    voiceIdDisplay.textContent = voiceSelect.value;
+                }
+
+                // Add copy button functionality
+                document.getElementById('copyVoiceId').addEventListener('click', function() {
+                    const voiceId = document.getElementById('voiceIdDisplay').textContent;
+                    navigator.clipboard.writeText(voiceId).then(() => {
+                        this.textContent = 'Copied!';
+                        this.classList.add('copied');
+                        setTimeout(() => {
+                            this.textContent = 'Copy ID';
+                            this.classList.remove('copied');
+                        }, 2000);
+                    });
+                });
+
+            } catch (error) {
+                console.error('Error loading voices:', error);
+                const errorDiv = document.getElementById('error');
+                errorDiv.textContent = `Failed to load voices: ${error.message}`;
+                errorDiv.style.display = 'block';
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadVoices);
+
+        async function generateSpeech() {
+            const text = document.getElementById('textInput').value;
+            const voiceId = document.getElementById('voiceSelect').value;
+            const modelId = document.getElementById('modelSelect').value;
+            const outputFormat = document.getElementById('outputFormat').value;
+            const errorDiv = document.getElementById('error');
+            const audioPlayer = document.getElementById('audioPlayer');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const generateButton = document.getElementById('generateButton');
+
+            if (!text) {
+                errorDiv.textContent = 'Please enter some text';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                // Show loading state
+                loadingIndicator.style.display = 'inline';
+                generateButton.disabled = true;
+                errorDiv.style.display = 'none';
+
+                const response = await fetch('/elevenlabs/text-to-speech', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text,
+                        voiceId,
+                        modelId,
+                        outputFormat
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                audioPlayer.src = audioUrl;
+                audioPlayer.style.display = 'block';
+                
+                // Autoplay the audio
+                try {
+                    await audioPlayer.play();
+                } catch (playError) {
+                    console.warn('Autoplay failed:', playError);
+                }
+
+                errorDiv.style.display = 'none';
+            } catch (error) {
+                errorDiv.textContent = `Error: ${error.message}`;
+                errorDiv.style.display = 'block';
+                audioPlayer.style.display = 'none';
+            } finally {
+                // Hide loading state
+                loadingIndicator.style.display = 'none';
+                generateButton.disabled = false;
+            }
+        }
+
+        // Add keyboard shortcut for generation
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                generateSpeech();
+            }
+        });
+    </script>
+</body>
+</html> 
